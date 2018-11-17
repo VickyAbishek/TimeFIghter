@@ -3,21 +3,34 @@ package com.kotlin.vickyabishek.timefighter
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.os.PersistableBundle
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 
 class MainActivity : AppCompatActivity() {
 
     //Todo check what is internal and lateinit
+
+    //UI Elements
     internal lateinit var tapMeButton: Button
     internal lateinit var timeLeftTextView: TextView
     internal lateinit var yourScoreTextView: TextView
+
+    internal lateinit var countDownTimer: CountDownTimer
+    internal val initialCountDown: Long = 10000
+    internal val countDownDuration: Long = 1000
+    internal var timeLeftOnTimer: Long = 0
+
     internal var score: Int = 0
     internal var gameStarted: Boolean = false
 
-    internal lateinit var countDownTimer: CountDownTimer
-    internal val initialCountDown: Long = 60000
-    internal val countDownDuration: Long = 1000
+    internal val TAG = MainActivity::class.java.simpleName
+
+    companion object {
+        private val SCORE_KEY = "SCORE_KEY"
+        private val TIME_LEFT_KEY = "TIME_LEFT_KEY"
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         tapMeButton = findViewById(R.id.tap_me)
-        timeLeftTextView = findViewById(R.id.score)
+        timeLeftTextView = findViewById(R.id.time_left)
         yourScoreTextView = findViewById(R.id.score)
 
         resetScoresAndValues()
@@ -35,10 +48,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle?, outPersistentState: PersistableBundle?) {
+        super.onSaveInstanceState(outState, outPersistentState)
+
+        outState?.putInt(SCORE_KEY, score)
+        outState?.putLong(TIME_LEFT_KEY, timeLeftOnTimer)
+        countDownTimer.cancel()
+    }
+
+    private fun startGame() {
+        countDownTimer.start()
+        gameStarted = true
+    }
+
+    private fun endGame() {
+
+        Toast.makeText(this, getString(R.string.game_over_msg, score.toString()), Toast.LENGTH_SHORT).show();
+        resetScoresAndValues()
+    }
+
     fun incrementUserScore() {
         if( !gameStarted ) {
-            countDownTimer.start()
-            gameStarted = true
+            startGame()
         }
 
         ++score;
@@ -54,11 +85,12 @@ class MainActivity : AppCompatActivity() {
 
         countDownTimer = object: CountDownTimer( initialCountDown, countDownDuration ) {
             override fun onFinish() {
-
+                endGame()
             }
 
             override fun onTick(millisFinished: Long) {
                 val timeLeft = millisFinished / 1000
+                timeLeftOnTimer = millisFinished
                 timeLeftTextView.text = getString(R.string.time_left, timeLeft.toString())
             }
 
